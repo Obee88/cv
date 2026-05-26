@@ -1,0 +1,49 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Build, push to GHCR, and notify the vps.codes.hr deploy dashboard.
+#
+# Before your first push, register the project in the dashboard and:
+#  1. Replace <project-slug> below with the slug you registered (e.g. cv-builder)
+#  2. Add WEBHOOK_URL and WEBHOOK_SECRET as GitHub repo secrets
+# ─────────────────────────────────────────────────────────────────────────────
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          # TODO: replace <project-slug> with your registered slug
+          tags: ghcr.io/${{ github.repository_owner }}/<project-slug>:${{ github.sha }}
+
+      - name: Notify VPS dashboard
+        run: |
+          PAYLOAD=$(jq -n \
+            --arg image "ghcr.io/${{ github.repository_owner }}/<project-slug>:${{ github.sha }}" \
+            --arg sha "${{ github.sha }}" \
+            '{ image: $image, sha: $sha }')
+          SIG="sha256=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "${{ secrets.WEBHOOK_SECRET }}" | awk '{print $2}')"
+          curl -sf -X POST "${{ secrets.WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -H "X-Signature: $SIG" \
+            -d "$PAYLOAD"
