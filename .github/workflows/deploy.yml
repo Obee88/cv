@@ -35,11 +35,12 @@ jobs:
           OWNER:  ${{ steps.meta.outputs.owner }}
         run: |
           URL=$(printf '%s' "$URL" | tr -d '[:space:]')
+          TS=$(date +%s)
           BODY=$(jq -nc \
             --arg sha "$SHA" \
             --arg ref "$GITHUB_REF" \
             --arg image "ghcr.io/$OWNER/cv:$SHA" \
-            --argjson ts $(date +%s) \
+            --argjson ts "$TS" \
             '{sha:$sha, ref:$ref, image:$image, timestamp:$ts}')
           SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$SECRET" -binary | xxd -p -c 256)
           curl -fsS -X POST "$URL" \
