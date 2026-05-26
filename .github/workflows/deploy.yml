@@ -23,8 +23,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/cv:${{ steps.meta.outputs.sha }}
-            ghcr.io/${{ github.repository_owner }}/cv:latest
+            ghcr.io/${{ github.repository_owner | lower }}/cv:${{ steps.meta.outputs.sha }}
+            ghcr.io/${{ github.repository_owner | lower }}/cv:latest
       - name: Notify dashboard
         env:
           URL:    ${{ secrets.WEBHOOK_URL }}
@@ -34,7 +34,7 @@ jobs:
           BODY=$(jq -nc \
             --arg sha "$SHA" \
             --arg ref "$GITHUB_REF" \
-            --arg image "ghcr.io/${{ github.repository_owner }}/cv:$SHA" \
+            --arg image "ghcr.io/${{ github.repository_owner | lower }}/cv:$SHA" \
             --argjson ts $(date +%s) \
             '{sha:$sha, ref:$ref, image:$image, timestamp:$ts}')
           SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$SECRET" -binary | xxd -p -c 256)
