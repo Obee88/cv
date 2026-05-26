@@ -34,8 +34,7 @@ jobs:
           SHA:    ${{ steps.meta.outputs.sha }}
           OWNER:  ${{ steps.meta.outputs.owner }}
         run: |
-          echo "URL length: ${#URL}"
-          echo "URL prefix: ${URL:0:8}"
+          URL=$(printf '%s' "$URL" | tr -d '[:space:]')
           BODY=$(jq -nc \
             --arg sha "$SHA" \
             --arg ref "$GITHUB_REF" \
